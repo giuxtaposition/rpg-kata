@@ -1,3 +1,5 @@
+import CannotAttackSelfError from './exceptions/CannotAttackSelfError'
+
 export class Character {
     private MAX_HEALTH = 1000
     private _health: number
@@ -16,12 +18,30 @@ export class Character {
         return this._level
     }
 
+    public set level(level: number) {
+        this._level = level
+    }
+
     public attack(target: Character, damage: number) {
+        if (target === this) {
+            throw new CannotAttackSelfError()
+        }
+
+        const levelsDifference = this.level - target.level
+
+        if (levelsDifference >= 5) {
+            damage += damage * 0.5
+        }
+
+        if (levelsDifference <= -5) {
+            damage -= damage * 0.5
+        }
+
         target.receivesDamage(damage)
     }
 
-    public heal(target: Character, healing: number) {
-        target.receivesHealing(healing)
+    public heal(healing: number) {
+        this.receivesHealing(healing)
     }
 
     public receivesDamage(damage: number) {

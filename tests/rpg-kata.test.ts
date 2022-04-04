@@ -1,4 +1,5 @@
 import { Character } from '../src/Character'
+import CannotAttackSelfError from '../src/exceptions/CannotAttackSelfError'
 
 describe('RPG Kata Tests', () => {
     describe('When characters are created ', () => {
@@ -18,8 +19,13 @@ describe('RPG Kata Tests', () => {
     })
 
     describe('When characters deal damage to other characters', () => {
-        const character = new Character()
-        const targetCharacter = new Character()
+        let character: Character
+        let targetCharacter: Character
+
+        beforeEach(() => {
+            character = new Character()
+            targetCharacter = new Character()
+        })
 
         test('health of target decreases', () => {
             character.attack(targetCharacter, 100)
@@ -31,28 +37,49 @@ describe('RPG Kata Tests', () => {
             expect(targetCharacter.health).toBe(0)
             expect(targetCharacter.isAlive()).toBe(false)
         })
+
+        test('A Character cannot Deal Damage to itself.', () => {
+            expect(() => {
+                character.attack(character, 100)
+            }).toThrow(CannotAttackSelfError)
+        })
+
+        test('If the target is 5 or more Levels above the attacker, Damage is reduced by 50%', () => {
+            character.level = 5
+            targetCharacter.level = 10
+
+            character.attack(targetCharacter, 100)
+            expect(targetCharacter.health).toBe(950)
+        })
+
+        test('If the target is 5 or more levels below the attacker, Damage is increased by 50%', () => {
+            character.level = 10
+            targetCharacter.level = 5
+
+            character.attack(targetCharacter, 100)
+            expect(targetCharacter.health).toBe(850)
+        })
     })
 
-    describe('When characters heal another character', () => {
+    describe('When character heals themselves', () => {
         const character = new Character()
-        const targetCharacter = new Character()
 
-        test('health of target increases', () => {
-            character.attack(targetCharacter, 200)
-            character.heal(targetCharacter, 100)
-            expect(targetCharacter.health).toBe(900)
+        test('health increases', () => {
+            character.receivesDamage(200)
+            character.heal(100)
+            expect(character.health).toBe(900)
         })
 
         test('When healing exceeds max health, health becomes max health', () => {
-            character.heal(targetCharacter, 2000)
-            expect(targetCharacter.health).toBe(1000)
+            character.heal(2000)
+            expect(character.health).toBe(1000)
         })
 
         test('Dead characters cannot be healed', () => {
-            character.attack(targetCharacter, 2000)
-            character.heal(targetCharacter, 100)
-            expect(targetCharacter.health).toBe(0)
-            expect(targetCharacter.isAlive()).toBe(false)
+            character.receivesDamage(2000)
+            character.heal(100)
+            expect(character.health).toBe(0)
+            expect(character.isAlive()).toBe(false)
         })
     })
 })
