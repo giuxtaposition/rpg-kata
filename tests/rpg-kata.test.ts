@@ -1,9 +1,10 @@
 import { Character } from '../src/Character'
 import CannotAttackSelfError from '../src/exceptions/CannotAttackSelfError'
+import NotInRangeError from '../src/exceptions/NotInRangeError'
 
 describe('RPG Kata Tests', () => {
     describe('When characters are created ', () => {
-        const character = new Character()
+        const character = new Character('melee')
 
         test('Health starts at 1000', () => {
             expect(character.health).toBe(1000)
@@ -23,8 +24,8 @@ describe('RPG Kata Tests', () => {
         let targetCharacter: Character
 
         beforeEach(() => {
-            character = new Character()
-            targetCharacter = new Character()
+            character = new Character('melee')
+            targetCharacter = new Character('ranged')
         })
 
         test('health of target decreases', () => {
@@ -59,10 +60,29 @@ describe('RPG Kata Tests', () => {
             character.attack(targetCharacter, 100)
             expect(targetCharacter.health).toBe(850)
         })
+
+        describe('Characters have an attack Max Range', () => {
+            test('Melee fighters have a range of 2 meters', () => {
+                const meleeCharacter = new Character('melee')
+                expect(meleeCharacter.range).toBe(2)
+            })
+
+            test('Ranged fighters have a range of 20 meters', () => {
+                const rangedCharacter = new Character('ranged')
+                expect(rangedCharacter.range).toBe(20)
+            })
+
+            test('Characters must be in range to deal damage to a target', () => {
+                targetCharacter.position = 20
+                expect(() => {
+                    character.attack(targetCharacter, 100)
+                }).toThrow(NotInRangeError)
+            })
+        })
     })
 
     describe('When character heals themselves', () => {
-        const character = new Character()
+        const character = new Character('ranged')
 
         test('health increases', () => {
             character.receivesDamage(200)
