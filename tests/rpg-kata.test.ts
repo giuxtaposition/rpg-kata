@@ -1,5 +1,9 @@
 import { Character } from '../src/Character'
-import CannotAttackSelfError from '../src/exceptions/CannotAttackSelfError'
+import {
+    default as CannotAttackSelfError,
+    default as CannotAttackSelfOrAllyError,
+} from '../src/exceptions/CannotAttackSelfOrAllyError'
+import CanOnlyHealSelfOrAllyError from '../src/exceptions/CanOnlyHealSelfOrAllyError'
 import NotInRangeError from '../src/exceptions/NotInRangeError'
 
 describe('RPG Kata Tests', () => {
@@ -16,6 +20,10 @@ describe('RPG Kata Tests', () => {
 
         test('starting Alive', () => {
             expect(character.isAlive()).toBe(true)
+        })
+
+        test('have no faction', () => {
+            expect(character.factions).toHaveLength(0)
         })
     })
 
@@ -81,25 +89,69 @@ describe('RPG Kata Tests', () => {
         })
     })
 
-    describe('When character heals themselves', () => {
+    describe('When character heals', () => {
         const character = new Character('ranged')
 
         test('health increases', () => {
             character.receivesDamage(200)
-            character.heal(100)
+            character.heal(character, 100)
             expect(character.health).toBe(900)
         })
 
         test('When healing exceeds max health, health becomes max health', () => {
-            character.heal(2000)
+            character.heal(character, 2000)
             expect(character.health).toBe(1000)
         })
 
         test('Dead characters cannot be healed', () => {
             character.receivesDamage(2000)
-            character.heal(100)
+            character.heal(character, 100)
             expect(character.health).toBe(0)
             expect(character.isAlive()).toBe(false)
+        })
+
+        test('A character can only themselves or allies', () => {
+            const anotherCharacter = new Character('melee')
+
+            expect(() => {
+                character.heal(anotherCharacter, 100)
+            }).toThrow(CanOnlyHealSelfOrAllyError)
+        })
+    })
+
+    describe('When characters are in a faction', () => {
+        let character: Character
+        let ally: Character
+
+        beforeEach(() => {
+            character = new Character('melee')
+            ally = new Character('ranged')
+            character.joinFaction('faction1')
+            ally.joinFaction('faction1')
+        })
+
+        test('A Character may Join or Leave one or more Factions', () => {
+            character.joinFaction('faction1')
+            character.joinFaction('faction2')
+            expect(character.factions).toHaveLength(2)
+            character.leaveFaction('faction1')
+            expect(character.factions).toHaveLength(1)
+        })
+
+        test('Players belonging to the same Faction are considered Allies', () => {
+            expect(character.isAlly(ally)).toBe(true)
+        })
+
+        test('Allies cannot Deal Damage to one another', () => {
+            expect(() => {
+                character.attack(ally, 100)
+            }).toThrow(CannotAttackSelfOrAllyError)
+        })
+
+        test('Allies can Heal one another', () => {
+            ally.receivesDamage(100)
+            character.heal(ally, 100)
+            expect(ally.health).toBe(1000)
         })
     })
 })
