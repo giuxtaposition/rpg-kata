@@ -1,17 +1,16 @@
-import CannotAttackSelfError from './exceptions/CannotAttackSelfOrAllyError'
+import { Entity } from './Entity'
+import CannotAttackSelfOrAllyError from './exceptions/CannotAttackSelfOrAllyError'
 import CanOnlyHealSelfOrAllyError from './exceptions/CanOnlyHealSelfOrAllyError'
 import NotInRangeError from './exceptions/NotInRangeError'
 
-export class Character {
-    private MAX_HEALTH = 1000
+export class Character extends Entity {
     private _attackRange: number
-    private _health: number
     private _level: number
     private _position: number
     private _factions: string[]
 
-    constructor(characterClass: characterClass) {
-        this._health = this.MAX_HEALTH
+    constructor(characterClass: characterClass, maxHealth = 1000) {
+        super(maxHealth)
         this._level = 1
         this._position = 0
         this._factions = []
@@ -21,35 +20,25 @@ export class Character {
             : (this._attackRange = 2)
     }
 
-    public leaveFaction(faction: string) {
-        this._factions = this._factions.filter(f => f !== faction)
-    }
-    public joinFaction(faction: string) {
-        if (!this._factions.find(f => f === faction))
-            this._factions.push(faction)
-    }
+    public attack(target: Entity, damage: number) {
+        if (target instanceof Character) {
+            if (target === this || this.isAlly(target)) {
+                throw new CannotAttackSelfOrAllyError()
+            }
 
-    public isAlly(targetCharacter: Character): boolean {
-        return this.factions.some(f => targetCharacter.factions.includes(f))
-    }
+            if (!this.inRange(target.position)) {
+                throw new NotInRangeError()
+            }
 
-    public attack(target: Character, damage: number) {
-        if (target === this || this.isAlly(target)) {
-            throw new CannotAttackSelfError()
-        }
+            const levelsDifference = this.level - target.level
 
-        if (!this.inRange(target.position)) {
-            throw new NotInRangeError()
-        }
+            if (levelsDifference >= 5) {
+                damage += damage * 0.5
+            }
 
-        const levelsDifference = this.level - target.level
-
-        if (levelsDifference >= 5) {
-            damage += damage * 0.5
-        }
-
-        if (levelsDifference <= -5) {
-            damage -= damage * 0.5
+            if (levelsDifference <= -5) {
+                damage -= damage * 0.5
+            }
         }
 
         target.receivesDamage(damage)
@@ -62,12 +51,16 @@ export class Character {
         target.receivesHealing(healing)
     }
 
-    public receivesDamage(damage: number) {
-        this._health -= damage
+    public leaveFaction(faction: string) {
+        this._factions = this._factions.filter(f => f !== faction)
+    }
+    public joinFaction(faction: string) {
+        if (!this._factions.find(f => f === faction))
+            this._factions.push(faction)
+    }
 
-        if (this._health < 0) {
-            this._health = 0
-        }
+    public isAlly(targetCharacter: Character): boolean {
+        return this.factions.some(f => targetCharacter.factions.includes(f))
     }
 
     public receivesHealing(healing: number) {
@@ -85,10 +78,6 @@ export class Character {
 
     public get range() {
         return this._attackRange
-    }
-
-    public get health() {
-        return this._health
     }
 
     public get position() {

@@ -6,7 +6,7 @@ import {
 import CanOnlyHealSelfOrAllyError from '../src/exceptions/CanOnlyHealSelfOrAllyError'
 import NotInRangeError from '../src/exceptions/NotInRangeError'
 
-describe('RPG Kata Tests', () => {
+describe('Character Test', () => {
     describe('When characters are created ', () => {
         const character = new Character('melee')
 
